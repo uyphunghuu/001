@@ -1,0 +1,148 @@
+apiVersion: datacontract.io/v1
+kind: DataContract
+metadata:
+  name: bronze-to-silver-email
+  domain: ingestion
+  owner: data-engineering
+  description: >
+    Contract between Bronze (MinIO) and Silver (PostgreSQL) layers.
+    Ensures that every email.json from Gmail API has the required fields
+    before being processed by the Silver pipeline.
+spec:
+  schema:
+    type: json
+    format: email
+    version: 1.0.1
+    description: Gmail API message JSON schema
+    fields:
+      - name: id
+        type: string
+        required: true
+        description: Gmail message ID (unique per message)
+        pattern: "^[a-zA-Z0-9]+$"
+        severity: critical
+      - name: threadId
+        type: string
+        required: true
+        description: Gmail thread ID
+        pattern: "^[a-zA-Z0-9]+$"
+        severity: critical
+      - name: payload.mimeType
+        type: string
+        required: true
+        description: MIME type of the message
+        enum:
+          - text/plain
+          - text/html
+          - multipart/mixed
+          - multipart/alternative
+          - multipart/related
+          - application/pdf
+          - application/octet-stream
+        severity: high
+      - name: payload.headers
+        type: array[object]
+        required: true
+        description: Email headers array
+        minItems: 3
+        severity: critical
+      - name: payload.headers.name
+        type: string
+        required: true
+        description: Header name
+      - name: payload.headers.value
+        type: string
+        required: true
+        description: Header value
+      - name: payload.body.data
+        type: string
+        required: false
+        description: Base64-encoded body (for non-multipart messages)
+      - name: payload.parts
+        type: array[object]
+        required: false
+        description: Multipart message parts
+      - name: payload.parts[].mimeType
+        type: string
+        required: false
+      - name: payload.parts[].body.data
+        type: string
+        required: false
+        description: Base64-encoded part body
+      - name: payload.parts[].filename
+        type: string
+        required: false
+        description: Attachment filename
+
+  required_headers:
+    - name: Subject
+      required: true
+      severity: critical
+    - name: From
+      required: true
+      severity: critical
+    - name: Date
+      required: true
+      severity: critical
+      format: RFC2822
+    - name: Message-ID
+      required: true
+      severity: high
+    - name: To
+      required: true
+      severity: high
+
+  quality:
+    - metric: null_rate
+      field: id
+      max: 0.0
+      description: ID must never be null
+    - metric: null_rate
+      field: threadId
+      max: 0.0
+    - metric: unique_rate
+      field: id
+      min: 1.0
+      description: No duplicate message IDs
+    - metric: freshness
+      field: Date
+      maxDays: 7
+      description: Email data must be no older than 7 days
+    - metric: completeness
+      field: payload.headers
+      min: 1.0
+      description: All required headers must be present
+    - metric: valid_base64_rate
+      field: payload.body.data
+      min: 0.98
+      description: Body data must be valid base64
+
+  clauses:
+    - clause: Every email.json must have a non-empty id and threadId
+      severity: critical
+      blocking: true
+    - clause: Every email.json must have at minimum Subject, From, Date headers
+      severity: critical
+      blocking: true
+    - clause: Date header must be in valid RFC 2822 format
+      severity: high
+      blocking: false
+    - clause: If payload.body.data is present, it must be valid base64
+      severity: critical
+      blocking: true
+    - clause: Base64 body must decode to valid UTF-8 text
+      severity: high
+      blocking: false
+    - clause: The raw_data checksum must match between MinIO and pipeline
+      severity: high
+      blocking: false
+
+  notification:
+    onViolation:
+      - channel: log
+      - channel: metric
+      - channel: alert
+        severity_threshold: high
+    onPass:
+      - channel: log
+        level: debug

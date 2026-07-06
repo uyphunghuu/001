@@ -1,0 +1,91 @@
+# Prometheus Configuration for AI Platform Observability
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  scrape_timeout: 10s
+
+# Alerting configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          # - alertmanager:9093
+
+# Rule files for alerts
+rule_files:
+  - "alerts/*.yml"
+
+# Scrape targets
+scrape_configs:
+  # ─── Silver Pipeline ──────────────────────────────────────────────────
+  - job_name: "silver_pipeline"
+    honor_labels: true
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["localhost:8081"]
+        labels:
+          layer: silver
+          component: pipeline
+
+  # ─── Gold Pipeline ────────────────────────────────────────────────────
+  - job_name: "gold_pipeline"
+    honor_labels: true
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["localhost:8082"]
+        labels:
+          layer: gold
+          component: pipeline
+
+  # ─── RAG Service ──────────────────────────────────────────────────────
+  - job_name: "rag_service"
+    honor_labels: true
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["localhost:8083"]
+        labels:
+          layer: gold
+          component: rag
+
+  # ─── Agent Service ────────────────────────────────────────────────────
+  - job_name: "agent_service"
+    honor_labels: true
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["localhost:8084"]
+        labels:
+          layer: ai
+          component: agent
+
+  # ─── Pushgateway (for short-lived jobs) ──────────────────────────────
+  - job_name: "pushgateway"
+    honor_labels: true
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["localhost:9091"]
+        labels:
+          component: pushgateway
+
+  # ─── PostgreSQL ────────────────────────────────────────────────────────
+  - job_name: "postgresql"
+    static_configs:
+      - targets: ["localhost:9187"]
+        labels:
+          component: database
+          db: ai_platform
+
+  # ─── MinIO ─────────────────────────────────────────────────────────────
+  - job_name: "minio"
+    metrics_path: /minio/v2/metrics/cluster
+    static_configs:
+      - targets: ["localhost:9000"]
+        labels:
+          layer: bronze
+          component: storage
+
+  # ─── Node exporter (system metrics) ───────────────────────────────────
+  - job_name: "node"
+    static_configs:
+      - targets: ["localhost:9100"]
+        labels:
+          component: system

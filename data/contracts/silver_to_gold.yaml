@@ -1,0 +1,156 @@
+apiVersion: datacontract.io/v1
+kind: DataContract
+metadata:
+  name: silver-to-gold-node
+  domain: enrichment
+  owner: data-engineering
+  description: >
+    Contract between Silver (PostgreSQL entities) and Gold (knowledge graph nodes).
+    Ensures every node has valid source_ref, correct type, and proper embedding text.
+spec:
+  schema:
+    type: postgres
+    table: gold_nodes
+    version: 1.0.1
+    description: Gold layer universal node schema
+    fields:
+      - name: type
+        type: string
+        required: true
+        description: Node type classification
+        enum:
+          - document
+          - communication
+          - activity
+          - agent
+          - resource
+          - event
+        severity: critical
+      - name: subtype
+        type: string
+        required: false
+        description: Node subtype (e.g., email, report, meeting, dataset)
+      - name: source_ref
+        type: jsonb
+        required: true
+        description: Reference to source Silver record
+        severity: critical
+        fields:
+          - name: table
+            type: string
+            required: true
+            enum:
+              - documents
+              - communications
+              - events
+          - name: id
+            type: string
+            required: true
+            pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          - name: source
+            type: string
+            required: true
+          - name: checksum
+            type: string
+            required: true
+            pattern: "^[a-f0-9]{64}$"
+      - name: name
+        type: string
+        required: false
+        minLength: 1
+      - name: content
+        type: text
+        required: false
+      - name: properties
+        type: jsonb
+        required: false
+      - name: traits
+        type: jsonb
+        required: false
+        description: Auto-extracted concepts, topics, projects
+      - name: embedding_text
+        type: text
+        required: true
+        minLength: 10
+        description: Concatenated text used for embedding generation
+      - name: embedding_vector
+        type: vector(384)
+        required: false
+        description: 384-dimensional pgvector embedding
+        severity: high
+      - name: confidence
+        type: number
+        required: false
+        min: 0.0
+        max: 1.0
+      - name: status
+        type: string
+        required: false
+        enum:
+          - active
+          - inactive
+          - archived
+      - name: effective_start
+        type: datetime
+        required: false
+      - name: effective_end
+        type: datetime
+        required: false
+
+  quality:
+    - metric: completeness
+      field: source_ref
+      min: 1.0
+      description: Every node must have a source_ref
+    - metric: referential_integrity
+      description: source_ref.id must exist in the referenced Silver table
+      severity: critical
+    - metric: completeness
+      field: embedding_text
+      min: 1.0
+      description: Every node must have embedding_text
+    - metric: embedding_dimension
+      field: embedding_vector
+      value: 384
+      description: Embedding vector must be exactly 384 dimensions
+      severity: critical
+    - metric: completeness
+      field: traits
+      min: 0.7
+      description: At least 70% of nodes should have extracted traits
+    - metric: null_rate
+      field: type
+      max: 0.0
+    - metric: valid_type_rate
+      field: type
+      min: 1.0
+
+  clauses:
+    - clause: Every gold_node must have a valid source_ref that references an existing Silver record
+      severity: critical
+      blocking: true
+    - clause: Every gold_node must have non-empty embedding_text (min 10 chars)
+      severity: high
+      blocking: true
+    - clause: If embedding_vector is set, it must be exactly 384 dimensions
+      severity: critical
+      blocking: true
+    - clause: "Node type must be one of: document, communication, activity, agent, resource, event"
+      severity: critical
+      blocking: true
+    - clause: source_ref.checksum must match the checksum in the referenced Silver record
+      severity: high
+      blocking: false
+    - clause: Agent nodes must have properties.email set
+      severity: high
+      blocking: false
+
+  notification:
+    onViolation:
+      - channel: log
+      - channel: metric
+      - channel: alert
+        severity_threshold: high
+    onPass:
+      - channel: log
+        level: debug

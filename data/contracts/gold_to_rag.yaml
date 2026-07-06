@@ -1,0 +1,118 @@
+apiVersion: datacontract.io/v1
+kind: DataContract
+metadata:
+  name: gold-to-rag-chunk
+  domain: retrieval
+  owner: ai-engineering
+  description: >
+    Contract between Gold (knowledge graph nodes) and RAG (chunks + vectors).
+    Ensures that every chunk has valid parent reference, non-empty content,
+    and correct embedding dimension.
+spec:
+  schema:
+    type: postgres
+    table: chunks
+    version: 1.0.0
+    description: RAG chunk schema
+    fields:
+      - name: id
+        type: string
+        required: true
+        description: Chunk UUID
+      - name: parent_node_id
+        type: string
+        required: true
+        description: Reference to gold_nodes.id
+        severity: critical
+      - name: parent_type
+        type: string
+        required: true
+        enum:
+          - document
+          - communication
+          - activity
+        severity: high
+      - name: content
+        type: text
+        required: true
+        minLength: 10
+        description: Chunk text content (min 10 chars to avoid empty chunks)
+        severity: critical
+      - name: chunk_index
+        type: integer
+        required: true
+        min: 0
+        description: Chunk order within parent document
+      - name: chunk_count
+        type: integer
+        required: false
+        min: 1
+        description: Total chunks for this parent
+      - name: embedding
+        type: array[number]
+        required: false
+        minItems: 384
+        maxItems: 384
+        description: 384-dimensional embedding vector
+        severity: critical
+      - name: metadata
+        type: jsonb
+        required: false
+        description: Chunk-level metadata (source_ref, page_number, section_title)
+
+  quality:
+    - metric: completeness
+      field: parent_node_id
+      min: 1.0
+      description: Every chunk must reference a parent node
+    - metric: referential_integrity
+      field: parent_node_id
+      table: gold_nodes
+      description: parent_node_id must exist in gold_nodes
+    - metric: content_length
+      field: content
+      min: 10
+      max: 10000
+      description: Chunk content should be between 10 and 10,000 chars
+    - metric: embedding_dimension
+      field: embedding
+      value: 384
+      description: Embedding must be 384-dimensional
+    - metric: duplicate_rate
+      field: content
+      max: 0.05
+      description: Max 5% duplicate chunks (Jaccard similarity > 0.9)
+    - metric: orphan_rate
+      description: Chunks whose parent_node_id no longer exists in gold_nodes
+      max: 0.01
+    - metric: completeness
+      field: chunk_index
+      min: 1.0
+      description: Every chunk must have chunk_index
+
+  clauses:
+    - clause: Every chunk must have a valid parent_node_id that references an existing gold_nodes record
+      severity: critical
+      blocking: true
+    - clause: Chunk content must be between 10 and 10,000 characters
+      severity: high
+      blocking: true
+    - clause: If embedding is set, it must have exactly 384 elements
+      severity: critical
+      blocking: true
+    - clause: Chunk content should not be a duplicate (Jaccard similarity > 0.9) of another chunk from the same parent
+      severity: medium
+      blocking: false
+    - clause: chunk_index must be contiguous and within [0, chunk_count)
+      severity: high
+      blocking: false
+
+  notification:
+    onViolation:
+      - channel: log
+      - channel: metric
+      - channel: alert
+        severity_threshold: high
+    onPass:
+      - channel: log
+        level: debug

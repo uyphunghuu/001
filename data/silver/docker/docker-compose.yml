@@ -1,0 +1,94 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: ai-platform-postgres
+    restart: unless-stopped
+    ports:
+      - "${PG_PORT:-5433}:5432"
+    environment:
+      POSTGRES_USER: ${PG_USER:-platform}
+      POSTGRES_PASSWORD: ${PG_PASSWORD:-platform123}
+      POSTGRES_DB: ${PG_DB:-ai_platform}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PG_USER:-platform} -d ${PG_DB:-ai_platform}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - ai-platform
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: ai-platform-pgadmin
+    restart: unless-stopped
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@platform.local}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin123}
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - ai-platform
+
+  minio:
+    image: minio/minio:latest
+    container_name: ai-platform-minio
+    restart: unless-stopped
+    ports:
+      - "${MINIO_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - ai-platform
+
+  mc:
+    image: minio/mc:latest
+    container_name: ai-platform-mc
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      until /usr/bin/mc config host add myminio http://minio:9000 ${MINIO_ACCESS_KEY:-minioadmin} ${MINIO_SECRET_KEY:-minioadmin}; do echo 'Waiting for MinIO...'; sleep 2; done;
+      /usr/bin/mc mb -p myminio/gmail-raw;
+      /usr/bin/mc mb -p myminio/silver-output;
+      /usr/bin/mc anonymous set public myminio/gmail-raw;
+      echo 'Buckets created';
+      tail -f /dev/null
+      "
+    networks:
+      - ai-platform
+
+networks:
+  ai-platform:
+    name: ai-platform
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+  minio_data:
+    driver: local

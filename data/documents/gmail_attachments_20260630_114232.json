@@ -1,0 +1,23 @@
+{
+  "source": "gmail",
+  "query": "in:inbox after:2026/06/29 has:attachment",
+  "fetched_at": "2026-06-30T11:42:32.948752",
+  "total_emails": 1,
+  "emails": [
+    {
+      "id": "19f16ba35a6515e1",
+      "thread_id": "19f16ba35a6515e1",
+      "subject": "lịch tháng 6",
+      "from": "phunghuuuy <phunghuuuy2998@gmail.com>",
+      "date": "Tue, 30 Jun 2026 11:11:57 +0700",
+      "attachments": [
+        {
+          "filename": "Lich_lam_viec_gia_lap_thang_06_2026.docx",
+          "path": "D:\\Laboratory\\001\\ai-platform\\data\\documents\\19f16ba35a6515e1_Lich_lam_viec_gia_lap_thang_06_2026.docx",
+          "size": 38471,
+          "mime_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        }
+      ]
+    }
+  ]
+}
