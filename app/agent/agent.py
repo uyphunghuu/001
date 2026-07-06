@@ -1,9 +1,8 @@
-import time
 from openai import OpenAI
 
+from app.agent.prompt import build_prompt
 from app.config.settings import settings
 from app.retriever.retriever import GoldRetriever, RetrievalContext
-from app.agent.prompt import build_prompt
 from app.schemas.chat import Source
 
 
@@ -24,14 +23,12 @@ class Agent:
     def answer(self, question: str, ctx: RetrievalContext) -> tuple[str, list[Source]]:
         prompt = build_prompt(question, ctx)
 
-        start = time.monotonic()
         response = self.client.chat.completions.create(
             model=settings.llm_model,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3,
             max_tokens=1024,
         )
-        elapsed = (time.monotonic() - start) * 1000
 
         answer = response.choices[0].message.content or ""
 
