@@ -45,11 +45,13 @@ class Agent:
                 name = summary[:100] if summary else name
             if not name:
                 continue
-            sources.append(Source(
-                type=item.get("type", "unknown"),
-                name=name,
-                summary=(item.get("summary") or item.get("content", "")[:200] or None),
-            ))
+            sources.append(
+                Source(
+                    type=item.get("type", "unknown"),
+                    name=name,
+                    summary=(item.get("summary") or item.get("content", "")[:200] or None),
+                )
+            )
 
         order = {"event": 0, "agent": 0, "document": 1, "communication": 2}
         sources.sort(key=lambda s: order.get(s.type, 9))

@@ -32,7 +32,8 @@ class GoldRetriever:
         return ctx
 
     def _nodes_with_time(self, now: datetime, session: Session) -> list[dict]:
-        sql = text("""
+        sql = text(
+            """
             SELECT id, type, subtype, name, summary, content,
                    effective_start, effective_end,
                    importance, properties
@@ -42,16 +43,25 @@ class GoldRetriever:
               AND effective_start <= :month_later
             ORDER BY effective_start ASC
             LIMIT 100
-        """)
-        rows = session.execute(sql, {
-            "week_ago": now - timedelta(days=7),
-            "month_later": now + timedelta(days=30),
-        }).mappings().all()
+        """
+        )
+        rows = (
+            session.execute(
+                sql,
+                {
+                    "week_ago": now - timedelta(days=7),
+                    "month_later": now + timedelta(days=30),
+                },
+            )
+            .mappings()
+            .all()
+        )
         return [dict(r) for r in rows]
 
     def _recent_communications(self, now: datetime, session: Session) -> list[dict]:
         since = now - timedelta(days=7)
-        sql = text("""
+        sql = text(
+            """
             SELECT id, name, summary, content,
                    effective_start, type, subtype,
                    importance, properties
@@ -60,12 +70,14 @@ class GoldRetriever:
               AND effective_start >= :since
             ORDER BY effective_start DESC
             LIMIT 20
-        """)
+        """
+        )
         rows = session.execute(sql, {"since": since}).mappings().all()
         return [dict(r) for r in rows]
 
     def _important_documents(self, session: Session) -> list[dict]:
-        sql = text("""
+        sql = text(
+            """
             SELECT id, name, summary, content,
                    importance, created_at
             FROM gold_nodes
@@ -73,7 +85,8 @@ class GoldRetriever:
               AND importance >= 2
             ORDER BY importance DESC, updated_at DESC
             LIMIT 10
-        """)
+        """
+        )
         rows = session.execute(sql).mappings().all()
         return [dict(r) for r in rows]
 
@@ -87,7 +100,8 @@ class GoldRetriever:
             f"(name ILIKE :kw{i} OR summary ILIKE :kw{i} OR content ILIKE :kw{i})"
             for i in range(len(keywords))
         )
-        sql = text(f"""
+        sql = text(
+            f"""
             SELECT id, type, name, summary,
                    content, effective_start, importance
             FROM gold_nodes
@@ -95,12 +109,14 @@ class GoldRetriever:
             ORDER BY importance DESC NULLS LAST,
                      effective_start DESC NULLS LAST
             LIMIT 10
-        """)
+        """
+        )
         params = {f"kw{i}": f"%{kw}%" for i, kw in enumerate(keywords)}
         rows = session.execute(sql, params).mappings().all()
         if rows:
             return [dict(r) for r in rows]
-        sql = text("""
+        sql = text(
+            """
             SELECT id, type, name, summary,
                    content, effective_start, importance
             FROM gold_nodes
@@ -111,21 +127,28 @@ class GoldRetriever:
             ) @@ plainto_tsquery('simple', :query)
             ORDER BY importance DESC, effective_start DESC NULLS LAST
             LIMIT 10
-        """)
+        """
+        )
         rows = session.execute(sql, {"query": query}).mappings().all()
         return [dict(r) for r in rows]
 
     def vector_search(self, session: Session, embedding: list[float], top_k: int = 5) -> list[dict]:
-        sql = text("""
+        sql = text(
+            """
             SELECT id, type, name, summary, content,
                    1 - (embedding_vector <=> :embedding) AS similarity
             FROM gold_nodes
             WHERE embedding_vector IS NOT NULL
             ORDER BY embedding_vector <=> :embedding
             LIMIT :top_k
-        """)
-        rows = session.execute(
-            sql,
-            {"embedding": embedding, "top_k": top_k},
-        ).mappings().all()
+        """
+        )
+        rows = (
+            session.execute(
+                sql,
+                {"embedding": embedding, "top_k": top_k},
+            )
+            .mappings()
+            .all()
+        )
         return [dict(r) for r in rows]

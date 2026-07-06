@@ -26,6 +26,7 @@ HEALTH_QUERY = sa_text("SELECT 1")
 @app.get("/health")
 def health():
     from app.database.session import SessionLocal
+
     try:
         with SessionLocal() as s:
             s.execute(HEALTH_QUERY)
