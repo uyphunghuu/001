@@ -1,0 +1,46 @@
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+]
+ignore = [
+    "E501",  # line too long (handled by black)
+    "B008",  # do not perform function calls in default arguments (FastAPI pattern)
+    "UP007", # Use X | Y instead of Optional[X] — keep for clarity
+]
+exclude = [
+    ".git",
+    "__pycache__",
+    ".venv",
+    "data/silver/migrations",
+    "data/gold/migrations",
+    "scripts",        # legacy scripts, không enforce
+]
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+exclude = '''
+/(
+    \.git
+  | __pycache__
+  | \.venv
+  | data/silver/migrations
+  | data/gold/migrations
+  | scripts
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 100
+skip_glob = [
+    "data/*/migrations/*",
+    "scripts/*",
+]

@@ -1,0 +1,67 @@
+# Git
+.git
+.gitignore
+
+# Python cache
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.egg-info
+.eggs
+dist
+build
+.tox
+.nox
+
+# Virtual env
+.venv
+venv
+env
+
+# Secrets & env
+.env
+.env.*
+!.env.example
+configs/credentials.json
+configs/token.json
+
+# Data & storage (không vào image)
+data/bronze/
+data/silver/extracted_text/
+data/silver_backup_*/
+data/observability/lineage_events.jsonl
+data/pipeline.db
+*.db
+*.sqlite
+
+# Tests & CI
+tests/
+.pytest_cache
+.coverage
+htmlcov/
+coverage.xml
+
+# Dev tools
+requirements-dev.txt
+.ruff_cache
+
+# IDE
+.vscode/
+.idea/
+
+# Docs & misc
+docs/
+*.md
+!README.md
+Makefile
+test_*.py
+check_*.py
+verify_*.py
+show_*.py
+reset_*.py
+demo_*.py
+web_*.py
+web_error.txt
+server.log
+*.log
