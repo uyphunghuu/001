@@ -31,13 +31,13 @@ jobs:
           cache: "pip"
 
       - name: Install dev dependencies
-        run: pip install ruff==0.5.5 black==24.10.0 isort==5.13.2
+        run: pip install ruff==0.5.5 isort==5.13.2
 
       - name: Ruff — lint
         run: ruff check app/
 
-      - name: Black — format check
-        run: black --check app/
+      - name: Ruff — format check
+        run: ruff format --check app/
 
       - name: isort — import order check
         run: isort --check-only app/
