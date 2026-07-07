@@ -5,26 +5,9 @@ uvicorn==0.32.1
 # ── Database ────────────────────────────────────────────────────
 sqlalchemy==2.0.51
 psycopg2-binary==2.9.12
-alembic==1.18.4
 
 # ── LLM / AI ────────────────────────────────────────────────────
 openai==2.40.0
-sentence-transformers==5.5.1
 
 # ── Validation ──────────────────────────────────────────────────
 pydantic==2.13.4
-pydantic-settings==2.14.1
-
-# ── Storage ─────────────────────────────────────────────────────
-minio==7.2.20
-
-# ── Google APIs ─────────────────────────────────────────────────
-google-api-python-client==2.198.0
-google-auth-httplib2==0.4.0
-google-auth-oauthlib==1.4.0
-
-# ── Observability ───────────────────────────────────────────────
-prometheus_client==0.21.0
-
-# ── Utilities ───────────────────────────────────────────────────
-python-dotenv==1.2.2

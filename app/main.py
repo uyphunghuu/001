@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text as sa_text
 
 from app.api.chat import router as chat_router
+from app.database.init_db import init_database
 
 app = FastAPI(
     title="Project 001 — AI Platform MVP",
@@ -19,6 +20,12 @@ app.add_middleware(
 )
 
 app.include_router(chat_router)
+
+
+@app.on_event("startup")
+def on_startup():
+    init_database()
+
 
 HEALTH_QUERY = sa_text("SELECT 1")
 

@@ -45,7 +45,7 @@ class Settings:
 
     @property
     def database_url(self) -> str:
-        return f"postgresql://{self.pg_user}:{self.pg_password}@{self.pg_host}:{self.pg_port}/{self.pg_db}"
+        return f"postgresql://{self.pg_user}:{self.pg_password}@{self.pg_host}:{self.pg_port}/{self.pg_db}?sslmode=require"
 
 
 settings = Settings()
