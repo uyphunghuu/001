@@ -1,5 +1,9 @@
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text as sa_text
 
 from app.api.chat import router as chat_router
@@ -20,6 +24,15 @@ app.add_middleware(
 )
 
 app.include_router(chat_router)
+
+static_dir = Path(__file__).parent / "static"
+if static_dir.exists():
+    app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+
+
+@app.get("/")
+def root():
+    return FileResponse(str(static_dir / "index.html"))
 
 
 @app.on_event("startup")

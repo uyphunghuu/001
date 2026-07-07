@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Platform — Chat MVP</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
+    background: #f0f2f5; color: #1a1a2e; height: 100vh; display: flex; flex-direction: column;
+  }
+  header {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    color: #fff; padding: 16px 24px; display: flex; align-items: center; gap: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.15); flex-shrink: 0;
+  }
+  header h1 { font-size: 18px; font-weight: 600; }
+  header span { font-size: 13px; color: #8e8ea0; }
+  .badge {
+    background: #0f3460; color: #e94560; font-size: 11px; padding: 2px 8px;
+    border-radius: 10px; font-weight: 600; letter-spacing: .5px;
+  }
+  #chat { flex: 1; overflow-y: auto; padding: 20px 16px; display: flex; flex-direction: column; gap: 16px; }
+  .msg {
+    max-width: 85%; padding: 14px 18px; border-radius: 16px; line-height: 1.55;
+    font-size: 14px; animation: fadeIn .25s ease; word-wrap: break-word;
+  }
+  .msg.user {
+    background: #1a1a2e; color: #fff; align-self: flex-end;
+    border-bottom-right-radius: 4px;
+  }
+  .msg.bot {
+    background: #fff; color: #1a1a2e; align-self: flex-start;
+    border-bottom-left-radius: 4px; box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  }
+  .msg.bot .answer { white-space: pre-wrap; }
+  .msg.bot .sources { margin-top: 12px; padding-top: 10px; border-top: 1px solid #eee; }
+  .msg.bot .sources summary { cursor: pointer; font-size: 12px; color: #666; font-weight: 600; }
+  .msg.bot .sources ul { margin-top: 6px; padding-left: 16px; font-size: 12px; color: #555; }
+  .msg.bot .sources li { margin-bottom: 3px; }
+  .msg.bot .sources .type { display: inline-block; background: #e8f0fe; color: #1a73e8;
+    font-size: 10px; padding: 1px 6px; border-radius: 4px; margin-right: 4px; font-weight: 600; }
+  .msg.error { background: #fde8e8; color: #c62828; align-self: center; font-size: 13px; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  #input-area {
+    flex-shrink: 0; padding: 12px 16px 16px; background: #fff; border-top: 1px solid #e0e0e0;
+    display: flex; gap: 10px; align-items: flex-end;
+  }
+  #input-area textarea {
+    flex: 1; border: 1px solid #ddd; border-radius: 12px; padding: 12px 16px; font-size: 14px;
+    font-family: inherit; resize: none; outline: none; max-height: 120px; line-height: 1.4;
+  }
+  #input-area textarea:focus { border-color: #1a1a2e; box-shadow: 0 0 0 2px rgba(26,26,46,.12); }
+  #input-area button {
+    background: #1a1a2e; color: #fff; border: none; border-radius: 12px; padding: 10px 22px;
+    font-size: 14px; font-weight: 600; cursor: pointer; transition: background .2s; height: 44px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  #input-area button:hover { background: #2d2d4a; }
+  #input-area button:disabled { background: #999; cursor: not-allowed; }
+  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #fff;
+    border-top-color: transparent; border-radius: 50%; animation: spin .6s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .welcome {
+    text-align: center; margin: auto; padding: 40px 20px; color: #888;
+  }
+  .welcome h2 { font-size: 22px; color: #1a1a2e; margin-bottom: 8px; }
+  .welcome p { font-size: 14px; line-height: 1.6; }
+  .welcome .hint { margin-top: 20px; font-size: 13px; color: #aaa; }
+  @media (max-width: 600px) {
+    header { padding: 12px 16px; } header h1 { font-size: 16px; }
+    .msg { max-width: 92%; font-size: 13px; padding: 12px 14px; }
+    #input-area { padding: 8px 12px 12px; }
+    #input-area textarea { font-size: 13px; padding: 10px 12px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>AI Platform</h1>
+  <span class="badge">MVP</span>
+  <span>Chat with your knowledge base</span>
+</header>
+
+<div id="chat">
+  <div class="welcome">
+    <h2>Welcome to AI Platform</h2>
+    <p>Ask me about your events, communications, and documents.</p>
+    <div class="hint">Try: "What's on my schedule today?" or "Show me recent emails"</div>
+  </div>
+</div>
+
+<div id="input-area">
+  <textarea id="input" rows="1" placeholder="Ask something..." maxlength="2000"></textarea>
+  <button id="send-btn">Send</button>
+</div>
+
+<script>
+const chat = document.getElementById('chat');
+const input = document.getElementById('input');
+const sendBtn = document.getElementById('send-btn');
+
+function autoResize() {
+  input.style.height = 'auto';
+  input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+}
+input.addEventListener('input', autoResize);
+
+function addMessage(content, role, sources) {
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+  if (role === 'bot') {
+    const ans = document.createElement('div');
+    ans.className = 'answer';
+    ans.textContent = content;
+    div.appendChild(ans);
+    if (sources && sources.length > 0) {
+      const sDiv = document.createElement('div');
+      sDiv.className = 'sources';
+      const details = document.createElement('details');
+      details.open = false;
+      const summary = document.createElement('summary');
+      summary.textContent = sources.length + ' source' + (sources.length > 1 ? 's' : '');
+      details.appendChild(summary);
+      const ul = document.createElement('ul');
+      sources.forEach(s => {
+        const li = document.createElement('li');
+        const type = document.createElement('span');
+        type.className = 'type';
+        type.textContent = s.type;
+        li.appendChild(type);
+        li.append(s.name || (s.summary ? s.summary.slice(0, 80) : ''));
+        ul.appendChild(li);
+      });
+      details.appendChild(ul);
+      sDiv.appendChild(details);
+      div.appendChild(sDiv);
+    }
+  } else if (role === 'user') {
+    div.textContent = content;
+  } else if (role === 'error') {
+    div.textContent = 'Error: ' + content;
+  }
+  chat.appendChild(div);
+  div.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  return div;
+}
+
+function removeWelcome() {
+  const w = chat.querySelector('.welcome');
+  if (w) w.remove();
+}
+
+let loading = false;
+async function send() {
+  const msg = input.value.trim();
+  if (!msg || loading) return;
+  input.value = '';
+  input.style.height = 'auto';
+  removeWelcome();
+  addMessage(msg, 'user');
+  loading = true;
+  sendBtn.disabled = true;
+  sendBtn.innerHTML = '<span class="spinner"></span>';
+  try {
+    const res = await fetch('/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: msg }),
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(err.slice(0, 200));
+    }
+    const data = await res.json();
+    addMessage(data.answer, 'bot', data.sources || []);
+  } catch (e) {
+    addMessage(e.message || 'Something went wrong', 'error');
+  }
+  loading = false;
+  sendBtn.disabled = false;
+  sendBtn.textContent = 'Send';
+}
+
+sendBtn.addEventListener('click', send);
+input.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+});
+</script>
+</body>
+</html>
