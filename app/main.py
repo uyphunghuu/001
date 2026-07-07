@@ -35,6 +35,18 @@ def root():
     return FileResponse(str(static_dir / "index.html"))
 
 
+@app.get("/chat")
+def chat_redirect():
+    from fastapi.responses import RedirectResponse
+
+    return RedirectResponse(url="/")
+
+
+@app.get("/index.html")
+def index_html():
+    return FileResponse(str(static_dir / "index.html"))
+
+
 @app.on_event("startup")
 def on_startup():
     init_database()
