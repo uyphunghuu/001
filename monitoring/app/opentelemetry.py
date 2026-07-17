@@ -2,12 +2,9 @@ import os
 from typing import Optional
 
 from opentelemetry import trace
-from opentelemetry._logs import set_logger_provider
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
-from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
-from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
@@ -40,19 +37,12 @@ def setup_opentelemetry(app: FastAPI) -> None:
     provider.add_span_processor(processor)
     trace.set_tracer_provider(provider)
 
-    logger_provider = LoggerProvider(resource=resource)
-    logger_processor = BatchLogRecordProcessor(
-        OTLPSpanExporter(endpoint=f"{OTEL_ENDPOINT}/v1/logs"),
-    )
-    logger_provider.add_log_record_processor(logger_processor)
-    set_logger_provider(logger_provider)
-
     FastAPIInstrumentor.instrument_app(app, tracer_provider=provider)
     RequestsInstrumentor().instrument()
 
     app.state.tracer = trace.get_tracer(OTEL_SERVICE_NAME)
 
-    app.add_event_handler("shutdown", lambda: _shutdown(provider, logger_provider))
+    app.add_event_handler("shutdown", lambda: _shutdown(provider))
 
 
 def get_tracer(app: Optional[FastAPI] = None):
@@ -61,9 +51,8 @@ def get_tracer(app: Optional[FastAPI] = None):
     return trace.get_tracer(OTEL_SERVICE_NAME)
 
 
-def _shutdown(provider: TracerProvider, logger_provider: LoggerProvider) -> None:
+def _shutdown(provider: TracerProvider) -> None:
     provider.shutdown()
-    logger_provider.shutdown()
 
 
 def trace_llm_call(tracer, model: str, input_tokens: int = 0, output_tokens: int = 0):
