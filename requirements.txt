@@ -1,6 +1,6 @@
 # ── Web Framework ──────────────────────────────────────────────
 fastapi==0.115.5
-uvicorn==0.32.1
+uvicorn[standard]==0.32.1
 
 # ── Database ────────────────────────────────────────────────────
 sqlalchemy==2.0.51
@@ -11,3 +11,15 @@ openai==2.40.0
 
 # ── Validation ──────────────────────────────────────────────────
 pydantic==2.13.4
+
+# ── Monitoring — Metrics ───────────────────────────────────────
+prometheus-client==0.21.0
+
+# ── Monitoring — Distributed Tracing ───────────────────────────
+opentelemetry-api==1.28.2
+opentelemetry-sdk==1.28.2
+opentelemetry-exporter-otlp==1.28.2
+opentelemetry-instrumentation-fastapi==0.49b2
+opentelemetry-instrumentation-requests==0.49b2
+opentelemetry-instrumentation-sqlalchemy==0.49b2
+opentelemetry-semantic-conventions==0.49b2

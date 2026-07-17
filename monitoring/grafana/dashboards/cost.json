@@ -1,0 +1,130 @@
+{
+  "title": "Cost Dashboard",
+  "version": 1,
+  "timezone": "utc",
+  "editable": true,
+  "refresh": "60s",
+  "tags": ["cost", "finops", "ai-platform"],
+  "panels": [
+    {
+      "title": "Cost Overview",
+      "type": "row",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0}
+    },
+    {
+      "title": "Total LLM Cost (24h)",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 4, "x": 0, "y": 1},
+      "targets": [{"expr": "increase(llm_cost_usd_total[24h])", "legendFormat": "24h cost"}],
+      "fieldConfig": {"defaults": {"unit": "currencyUSD"}}
+    },
+    {
+      "title": "Cost Rate ($/h)",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 4, "x": 4, "y": 1},
+      "targets": [{"expr": "rate(llm_cost_usd_total[1h])", "legendFormat": "$/h"}],
+      "fieldConfig": {"defaults": {"unit": "currencyUSD"}}
+    },
+    {
+      "title": "Total Tokens (24h)",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 4, "x": 8, "y": 1},
+      "targets": [{"expr": "increase(llm_tokens_total[24h])", "legendFormat": "24h tokens"}],
+      "fieldConfig": {"defaults": {"unit": "short"}}
+    },
+    {
+      "title": "Avg Cost per Request",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 4, "x": 12, "y": 1},
+      "targets": [{"expr": "increase(llm_cost_usd_total[1h]) / (increase(llm_requests_total[1h]) + 1)", "legendFormat": "$/req"}],
+      "fieldConfig": {"defaults": {"unit": "currencyUSD"}}
+    },
+    {
+      "title": "Projected Monthly Cost",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 4, "x": 16, "y": 1},
+      "targets": [{"expr": "increase(llm_cost_usd_total[1h]) * 730", "legendFormat": "Monthly"}],
+      "fieldConfig": {"defaults": {"unit": "currencyUSD"}}
+    },
+    {
+      "title": "Budget Remaining",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 4, "x": 20, "y": 1},
+      "targets": [{"expr": "100 - (increase(llm_cost_usd_total[30d]) / 500 * 100)", "legendFormat": "% left"}],
+      "fieldConfig": {"defaults": {"unit": "percent", "max": 100, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 30}, {"color": "red", "value": 10}]}}}
+    },
+    {
+      "title": "Cost Trends",
+      "type": "row",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 5}
+    },
+    {
+      "title": "LLM Cost Over Time ($/h)",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 6},
+      "targets": [
+        {"expr": "rate(llm_cost_usd_total[1h])", "legendFormat": "$/h"}
+      ]
+    },
+    {
+      "title": "Token Usage Over Time",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 6},
+      "targets": [
+        {"expr": "rate(llm_tokens_total[1h])", "legendFormat": "Total"},
+        {"expr": "rate(llm_tokens_total{type='input'}[1h])", "legendFormat": "Input"},
+        {"expr": "rate(llm_tokens_total{type='output'}[1h])", "legendFormat": "Output"}
+      ]
+    },
+    {
+      "title": "Cost Breakdown",
+      "type": "row",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 14}
+    },
+    {
+      "title": "Daily Cost (7 days)",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 15},
+      "targets": [
+        {"expr": "increase(llm_cost_usd_total[1d])", "legendFormat": "Daily"}
+      ]
+    },
+    {
+      "title": "Cost per Million Tokens",
+      "type": "stat",
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 15},
+      "targets": [{"expr": "increase(llm_cost_usd_total[1h]) / (increase(llm_tokens_total[1h]) / 1000000 + 1)", "legendFormat": "$/M tokens"}],
+      "fieldConfig": {"defaults": {"unit": "currencyUSD"}}
+    },
+    {
+      "title": "Cost Efficiency (Cost per Request)",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 15},
+      "targets": [
+        {"expr": "increase(llm_cost_usd_total[1h]) / (increase(llm_requests_total[1h]) + 1)", "legendFormat": "$/req"}
+      ]
+    },
+    {
+      "title": "Forecast",
+      "type": "row",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 23}
+    },
+    {
+      "title": "Cost Forecast (7 days)",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24},
+      "targets": [
+        {"expr": "predict_linear(increase(llm_cost_usd_total[7d])[7d], 604800)", "legendFormat": "Forecast"}
+      ]
+    },
+    {
+      "title": "Cost vs Tokens Correlation",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24},
+      "targets": [
+        {"expr": "rate(llm_cost_usd_total[1h])", "legendFormat": "Cost"},
+        {"expr": "rate(llm_tokens_total[1h]) / 10000", "legendFormat": "Tokens/10000"}
+      ]
+    }
+  ]
+}

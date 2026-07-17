@@ -1,0 +1,138 @@
+{
+  "title": "Knowledge Graph Dashboard",
+  "version": 1,
+  "timezone": "utc",
+  "editable": true,
+  "refresh": "30s",
+  "tags": ["knowledge-graph", "graph", "ai-platform"],
+  "panels": [
+    {
+      "title": "Graph Overview",
+      "type": "row",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0}
+    },
+    {
+      "title": "Total Nodes",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 4, "x": 0, "y": 1},
+      "targets": [{"expr": "gold_nodes_total", "legendFormat": "Nodes"}]
+    },
+    {
+      "title": "Total Edges",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 4, "x": 4, "y": 1},
+      "targets": [{"expr": "gold_edges_total", "legendFormat": "Edges"}]
+    },
+    {
+      "title": "Graph Growth (24h)",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 4, "x": 8, "y": 1},
+      "targets": [{"expr": "increase(gold_nodes_total[24h])", "legendFormat": "New nodes"}]
+    },
+    {
+      "title": "Timeline Entries",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 4, "x": 12, "y": 1},
+      "targets": [{"expr": "gold_timeline_total", "legendFormat": "Entries"}]
+    },
+    {
+      "title": "Communities",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 4, "x": 16, "y": 1},
+      "targets": [{"expr": "gold_communities_total", "legendFormat": "Communities"}]
+    },
+    {
+      "title": "Entities",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 4, "x": 20, "y": 1},
+      "targets": [{"expr": "gold_entities_total", "legendFormat": "Entities"}]
+    },
+    {
+      "title": "Graph Growth Over Time",
+      "type": "row",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 5}
+    },
+    {
+      "title": "Node Growth",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 6},
+      "targets": [
+        {"expr": "increase(gold_nodes_total[1h])", "legendFormat": "Nodes/h"}
+      ]
+    },
+    {
+      "title": "Edge Growth",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 6},
+      "targets": [
+        {"expr": "increase(gold_edges_total[1h])", "legendFormat": "Edges/h"}
+      ]
+    },
+    {
+      "title": "Edge-to-Node Ratio",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 6},
+      "targets": [
+        {"expr": "gold_edges_total / gold_nodes_total", "legendFormat": "Ratio"}
+      ]
+    },
+    {
+      "title": "Node Distribution",
+      "type": "row",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 14}
+    },
+    {
+      "title": "Nodes by Type",
+      "type": "piechart",
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 15},
+      "targets": [
+        {"expr": "count by(type) (gold_nodes)", "legendFormat": "{{type}}"}
+      ]
+    },
+    {
+      "title": "Edges by Type",
+      "type": "piechart",
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 15},
+      "targets": [
+        {"expr": "count by(type) (gold_edges)", "legendFormat": "{{type}}"}
+      ]
+    },
+    {
+      "title": "Graph Query Latency",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 15},
+      "targets": [
+        {"expr": "histogram_quantile(0.95, rate(knowledge_graph_query_duration_seconds_bucket[5m]))", "legendFormat": "p95"},
+        {"expr": "histogram_quantile(0.50, rate(knowledge_graph_query_duration_seconds_bucket[5m]))", "legendFormat": "p50"}
+      ]
+    },
+    {
+      "title": "Relationship Analysis",
+      "type": "row",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 23}
+    },
+    {
+      "title": "Top Node Types",
+      "type": "table",
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 24},
+      "targets": [{"expr": "topk(10, count by(type) (gold_nodes))", "legendFormat": "", "format": "table"}],
+      "transformations": [{"id": "organize", "options": {"renameByName": {"type": "Node Type", "Value": "Count"}}}]
+    },
+    {
+      "title": "Community Size Distribution",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 24},
+      "targets": [
+        {"expr": "gold_community_size", "legendFormat": "{{community_id}}"}
+      ]
+    },
+    {
+      "title": "Entities Over Time",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 24},
+      "targets": [
+        {"expr": "increase(gold_entities_total[24h])", "legendFormat": "New entities"}
+      ]
+    }
+  ]
+}

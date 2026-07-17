@@ -1,0 +1,151 @@
+{
+  "title": "AI Observability Dashboard",
+  "version": 1,
+  "timezone": "utc",
+  "editable": true,
+  "refresh": "10s",
+  "tags": ["ai", "llm", "retriever", "ai-platform"],
+  "panels": [
+    {
+      "title": "LLM Overview",
+      "type": "row",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0}
+    },
+    {
+      "title": "LLM Requests",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 1},
+      "targets": [
+        {"expr": "rate(llm_requests_total[5m])", "legendFormat": "Total"},
+        {"expr": "rate(llm_requests_total{status='error'}[5m])", "legendFormat": "Errors"},
+        {"expr": "rate(llm_requests_total{status='success'}[5m])", "legendFormat": "Success"}
+      ]
+    },
+    {
+      "title": "LLM Latency (p50/p95/p99)",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 1},
+      "targets": [
+        {"expr": "histogram_quantile(0.50, rate(llm_request_duration_seconds_bucket[5m]))", "legendFormat": "p50"},
+        {"expr": "histogram_quantile(0.95, rate(llm_request_duration_seconds_bucket[5m]))", "legendFormat": "p95"},
+        {"expr": "histogram_quantile(0.99, rate(llm_request_duration_seconds_bucket[5m]))", "legendFormat": "p99"}
+      ]
+    },
+    {
+      "title": "LLM Error Rate",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 1},
+      "targets": [
+        {"expr": "rate(llm_requests_total{status='error'}[5m]) / (rate(llm_requests_total[5m]) + 1) * 100", "legendFormat": "Error %"}
+      ]
+    },
+    {
+      "title": "Token Usage",
+      "type": "row",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 9}
+    },
+    {
+      "title": "Token Consumption",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 10},
+      "targets": [
+        {"expr": "rate(llm_tokens_total[5m])", "legendFormat": "Total"},
+        {"expr": "rate(llm_tokens_total{type='input'}[5m])", "legendFormat": "Input"},
+        {"expr": "rate(llm_tokens_total{type='output'}[5m])", "legendFormat": "Output"}
+      ]
+    },
+    {
+      "title": "Tokens per Request",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 10},
+      "targets": [
+        {"expr": "rate(llm_tokens_total[5m]) / (rate(llm_requests_total[5m]) + 1)", "legendFormat": "Avg tokens/req"}
+      ]
+    },
+    {
+      "title": "Context Length",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 10},
+      "targets": [
+        {"expr": "avg(llm_context_length)", "legendFormat": "Avg"},
+        {"expr": "max(llm_context_length)", "legendFormat": "Max"}
+      ]
+    },
+    {
+      "title": "Retriever Performance",
+      "type": "row",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 18}
+    },
+    {
+      "title": "Retrieval Latency by Strategy",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 19},
+      "targets": [
+        {"expr": "histogram_quantile(0.95, rate(retriever_duration_seconds_bucket{strategy='hybrid'}[5m]))", "legendFormat": "Hybrid p95"},
+        {"expr": "histogram_quantile(0.95, rate(retriever_duration_seconds_bucket{strategy='vector'}[5m]))", "legendFormat": "Vector p95"},
+        {"expr": "histogram_quantile(0.95, rate(retriever_duration_seconds_bucket{strategy='keyword'}[5m]))", "legendFormat": "Keyword p95"}
+      ]
+    },
+    {
+      "title": "Documents Retrieved",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 19},
+      "targets": [
+        {"expr": "rate(retriever_documents_total[5m])", "legendFormat": "Total"},
+        {"expr": "rate(retriever_documents_total{strategy='hybrid'}[5m])", "legendFormat": "Hybrid"},
+        {"expr": "rate(retriever_documents_total{strategy='vector'}[5m])", "legendFormat": "Vector"}
+      ]
+    },
+    {
+      "title": "Empty Retrieval Rate",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 19},
+      "targets": [
+        {"expr": "rate(retriever_empty_total[5m])", "legendFormat": "Total"},
+        {"expr": "rate(retriever_empty_total{strategy='hybrid'}[5m])", "legendFormat": "Hybrid"},
+        {"expr": "rate(retriever_empty_total{strategy='vector'}[5m])", "legendFormat": "Vector"}
+      ]
+    },
+    {
+      "title": "Quality Metrics",
+      "type": "row",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 27}
+    },
+    {
+      "title": "Hallucination Score",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 6, "x": 0, "y": 28},
+      "targets": [
+        {"expr": "avg(hallucination_score)", "legendFormat": "Avg"},
+        {"expr": "max(hallucination_score)", "legendFormat": "Max"}
+      ]
+    },
+    {
+      "title": "Answer Relevancy",
+      "type": "gauge",
+      "gridPos": {"h": 8, "w": 6, "x": 6, "y": 28},
+      "targets": [
+        {"expr": "avg(answer_relevancy_score)"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "percent", "max": 1, "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "yellow", "value": 0.5}, {"color": "green", "value": 0.8}]}}}
+    },
+    {
+      "title": "Groundedness",
+      "type": "gauge",
+      "gridPos": {"h": 8, "w": 6, "x": 12, "y": 28},
+      "targets": [
+        {"expr": "avg(groundedness_score)"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "percent", "max": 1, "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "yellow", "value": 0.5}, {"color": "green", "value": 0.8}]}}}
+    },
+    {
+      "title": "Faithfulness",
+      "type": "gauge",
+      "gridPos": {"h": 8, "w": 6, "x": 18, "y": 28},
+      "targets": [
+        {"expr": "avg(faithfulness_score)"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "percent", "max": 1, "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "yellow", "value": 0.5}, {"color": "green", "value": 0.8}]}}}
+    }
+  ]
+}

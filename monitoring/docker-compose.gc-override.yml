@@ -1,0 +1,36 @@
+services:
+  prometheus:
+    environment:
+      - GC_ENABLED=${GC_ENABLED}
+      - GC_INSTANCE_ID=${GC_INSTANCE_ID}
+      - GC_API_KEY=${GC_API_KEY}
+      - GC_REGION=${GC_REGION}
+    volumes:
+      - ./prometheus/prometheus-gc.yml:/etc/prometheus/prometheus.yml:ro
+    networks:
+      - ai_platform_observability
+
+  grafana:
+    profiles:
+      - dont-start
+
+  loki:
+    profiles:
+      - dont-start
+
+  promtail:
+    profiles:
+      - dont-start
+
+  tempo:
+    profiles:
+      - dont-start
+
+  otel-collector:
+    environment:
+      - GC_ENABLED=${GC_ENABLED}
+      - GC_INSTANCE_ID=${GC_INSTANCE_ID}
+      - GC_API_KEY=${GC_API_KEY}
+      - GC_REGION=${GC_REGION}
+    volumes:
+      - ./otel/otel-collector-gc.yml:/etc/otel/config.yml:ro

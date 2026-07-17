@@ -1,0 +1,109 @@
+{
+  "title": "Pipeline Dashboard",
+  "version": 1,
+  "timezone": "utc",
+  "editable": true,
+  "refresh": "15s",
+  "tags": ["pipeline", "data", "etl", "ai-platform"],
+  "panels": [
+    {
+      "title": "Pipeline Throughput",
+      "type": "row",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0}
+    },
+    {
+      "title": "Documents Processed",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 1},
+      "targets": [
+        {"expr": "rate(pipeline_processed_total[5m])", "legendFormat": "Success"},
+        {"expr": "rate(pipeline_failed_total[5m])", "legendFormat": "Failed"}
+      ]
+    },
+    {
+      "title": "Processing Rate by Layer",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 1},
+      "targets": [
+        {"expr": "rate(pipeline_processed_total{layer='bronze'}[5m])", "legendFormat": "Bronze"},
+        {"expr": "rate(pipeline_processed_total{layer='silver'}[5m])", "legendFormat": "Silver"},
+        {"expr": "rate(pipeline_processed_total{layer='gold'}[5m])", "legendFormat": "Gold"}
+      ]
+    },
+    {
+      "title": "Processing Time (p95 by Layer)",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 1},
+      "targets": [
+        {"expr": "histogram_quantile(0.95, rate(pipeline_duration_seconds_bucket{layer='bronze'}[5m]))", "legendFormat": "Bronze"},
+        {"expr": "histogram_quantile(0.95, rate(pipeline_duration_seconds_bucket{layer='silver'}[5m]))", "legendFormat": "Silver"},
+        {"expr": "histogram_quantile(0.95, rate(pipeline_duration_seconds_bucket{layer='gold'}[5m]))", "legendFormat": "Gold"}
+      ]
+    },
+    {
+      "title": "Pipeline Health",
+      "type": "row",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 9}
+    },
+    {
+      "title": "Success Rate",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 10},
+      "targets": [
+        {"expr": "rate(pipeline_processed_total[5m]) / (rate(pipeline_processed_total[5m]) + rate(pipeline_failed_total[5m]) + 1) * 100", "legendFormat": "Success %"},
+        {"expr": "rate(pipeline_failed_total[5m]) / (rate(pipeline_processed_total[5m]) + rate(pipeline_failed_total[5m]) + 1) * 100", "legendFormat": "Failure %"}
+      ]
+    },
+    {
+      "title": "Last Pipeline Run",
+      "type": "stat",
+      "gridPos": {"h": 8, "w": 4, "x": 8, "y": 10},
+      "targets": [
+        {"expr": "time() - pipeline_last_success_timestamp_seconds", "legendFormat": "Seconds ago"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "s", "color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 3600}, {"color": "red", "value": 86400}]}}}
+    },
+    {
+      "title": "Total Documents Ingested",
+      "type": "stat",
+      "gridPos": {"h": 8, "w": 4, "x": 12, "y": 10},
+      "targets": [
+        {"expr": "pipeline_processed_total", "legendFormat": "Total"}
+      ]
+    },
+    {
+      "title": "Cumulative Error Count",
+      "type": "stat",
+      "gridPos": {"h": 8, "w": 4, "x": 16, "y": 10},
+      "targets": [
+        {"expr": "pipeline_failed_total", "legendFormat": "Failed"}
+      ]
+    },
+    {
+      "title": "Pipeline by Stage",
+      "type": "row",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 18}
+    },
+    {
+      "title": "Processing Time by Stage",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 19},
+      "targets": [
+        {"expr": "histogram_quantile(0.95, rate(pipeline_duration_seconds_bucket{stage='ingest'}[5m]))", "legendFormat": "Ingest"},
+        {"expr": "histogram_quantile(0.95, rate(pipeline_duration_seconds_bucket{stage='clean'}[5m]))", "legendFormat": "Clean"},
+        {"expr": "histogram_quantile(0.95, rate(pipeline_duration_seconds_bucket{stage='transform'}[5m]))", "legendFormat": "Transform"},
+        {"expr": "histogram_quantile(0.95, rate(pipeline_duration_seconds_bucket{stage='embed'}[5m]))", "legendFormat": "Embed"},
+        {"expr": "histogram_quantile(0.95, rate(pipeline_duration_seconds_bucket{stage='validate'}[5m]))", "legendFormat": "Validate"}
+      ]
+    },
+    {
+      "title": "Validation Error Rate",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 19},
+      "targets": [
+        {"expr": "rate(pipeline_validation_errors_total[5m])", "legendFormat": "Errors"},
+        {"expr": "rate(pipeline_schema_drift_total[5m])", "legendFormat": "Schema drift"}
+      ]
+    }
+  ]
+}

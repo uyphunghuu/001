@@ -1,0 +1,352 @@
+groups:
+  - name: ai_platform
+    interval: 30s
+    rules:
+      # ── API ──────────────────────────────────────────────
+      - alert: APIHighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
+        for: 3m
+        labels:
+          severity: critical
+          team: backend
+        annotations:
+          summary: "API error rate > 5%"
+          description: "Error rate is {{ $value | humanizePercentage }} over 5m"
+
+      - alert: APIHighLatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 5
+        for: 3m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "API p95 latency > 5s"
+          description: "p95 latency is {{ $value }}s over 5m"
+
+      - alert: APIHighP99Latency
+        expr: histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[5m])) > 10
+        for: 3m
+        labels:
+          severity: critical
+          team: backend
+        annotations:
+          summary: "API p99 latency > 10s"
+          description: "p99 latency is {{ $value }}s over 5m"
+
+      - alert: APIHighConcurrency
+        expr: http_requests_active > 50
+        for: 1m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "High concurrent requests"
+          description: "{{ $value }} active requests"
+
+      - alert: APIEndpointDown
+        expr: up{job="fastapi_app"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: backend
+        annotations:
+          summary: "API endpoint is down"
+          description: "FastAPI app is unreachable"
+
+      # ── System ───────────────────────────────────────────
+      - alert: CPUHighUsage
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 90
+        for: 5m
+        labels:
+          severity: critical
+          team: infrastructure
+        annotations:
+          summary: "CPU usage > 90%"
+          description: "CPU is at {{ $value }}%"
+
+      - alert: MemoryHighUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          team: infrastructure
+        annotations:
+          summary: "Memory usage > 85%"
+          description: "Memory is at {{ $value }}%"
+
+      - alert: DiskHighUsage
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100 < 10
+        for: 5m
+        labels:
+          severity: critical
+          team: infrastructure
+        annotations:
+          summary: "Disk space < 10% free"
+          description: "Disk free is {{ $value | humanizePercentage }}"
+
+      - alert: DiskFillRate
+        expr: predict_linear(node_filesystem_free_bytes{mountpoint="/"}[6h], 86400) < 0
+        for: 1h
+        labels:
+          severity: warning
+          team: infrastructure
+        annotations:
+          summary: "Disk will fill in 24h"
+          description: "Disk will be full within 24h at current rate"
+
+      - alert: SwapHighUsage
+        expr: (1 - (node_memory_SwapFree_bytes / node_memory_SwapTotal_bytes)) * 100 > 50
+        for: 5m
+        labels:
+          severity: warning
+          team: infrastructure
+        annotations:
+          summary: "Swap usage > 50%"
+          description: "Swap is at {{ $value }}%"
+
+      - alert: ContainerRestarting
+        expr: rate(container_last_seen[5m]) > 0
+        for: 2m
+        labels:
+          severity: warning
+          team: infrastructure
+        annotations:
+          summary: "Container restart detected"
+          description: "Container {{ $labels.name }} restarted"
+
+      - alert: ContainerHighCPU
+        expr: rate(container_cpu_usage_seconds_total[1m]) * 100 > 80
+        for: 3m
+        labels:
+          severity: warning
+          team: infrastructure
+        annotations:
+          summary: "Container high CPU"
+          description: "Container {{ $labels.name }} CPU at {{ $value }}%"
+
+      # ── Database ─────────────────────────────────────────
+      - alert: DatabaseDown
+        expr: pg_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: backend
+        annotations:
+          summary: "PostgreSQL is down"
+          description: "Instance {{ $labels.instance }} is unreachable"
+
+      - alert: DatabaseHighConnections
+        expr: pg_stat_activity_count > 50
+        for: 3m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "High database connections"
+          description: "{{ $value }} active connections"
+
+      - alert: DatabaseConnectionExhausted
+        expr: pg_stat_activity_count / pg_settings_max_connections > 0.8
+        for: 3m
+        labels:
+          severity: critical
+          team: backend
+        annotations:
+          summary: "Database connections near limit"
+          description: "{{ $value | humanizePercentage }} of max connections used"
+
+      - alert: DatabaseSlowQueries
+        expr: rate(pg_stat_activity_max_timed_out[5m]) > 0
+        for: 2m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "Slow database queries detected"
+          description: "{{ $value }} slow queries/s"
+
+      - alert: DatabaseDeadlocks
+        expr: rate(pg_stat_database_deadlocks[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+          team: backend
+        annotations:
+          summary: "Database deadlocks detected"
+          description: "{{ $value }} deadlocks/s"
+
+      - alert: DatabaseCacheHitLow
+        expr: (sum(rate(pg_stat_database_blks_hit[5m])) / (sum(rate(pg_stat_database_blks_read[5m])) + sum(rate(pg_stat_database_blks_hit[5m])))) * 100 < 95
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "Database cache hit rate < 95%"
+          description: "Cache hit rate is {{ $value | humanizePercentage }}"
+
+      # ── MinIO ────────────────────────────────────────────
+      - alert: MinIODown
+        expr: up{job="minio"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: infrastructure
+        annotations:
+          summary: "MinIO is down"
+          description: "MinIO storage is unreachable"
+
+      - alert: MinIOAuthErrors
+        expr: rate(minio_s3_errors_total{api="authenticate"}[5m]) > 0
+        for: 3m
+        labels:
+          severity: warning
+          team: infrastructure
+        annotations:
+          summary: "MinIO authentication errors"
+          description: "{{ $value }} auth errors/s"
+
+      # ── LLM / AI ─────────────────────────────────────────
+      - alert: LLMHighErrorRate
+        expr: rate(llm_requests_total{status="error"}[5m]) / (rate(llm_requests_total[5m]) + 1) > 0.1
+        for: 3m
+        labels:
+          severity: warning
+          team: ai
+        annotations:
+          summary: "LLM error rate > 10%"
+          description: "LLM error rate is {{ $value | humanizePercentage }}"
+
+      - alert: LLMHighLatency
+        expr: histogram_quantile(0.95, rate(llm_request_duration_seconds_bucket[5m])) > 30
+        for: 3m
+        labels:
+          severity: warning
+          team: ai
+        annotations:
+          summary: "LLM p95 latency > 30s"
+          description: "LLM p95 latency is {{ $value }}s"
+
+      - alert: LLMTimeout
+        expr: rate(llm_requests_total{status="timeout"}[5m]) > 0
+        for: 2m
+        labels:
+          severity: critical
+          team: ai
+        annotations:
+          summary: "LLM timeouts detected"
+          description: "{{ $value }} timeouts/s"
+
+      - alert: HighTokenCost
+        expr: rate(llm_cost_usd_total[1h]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          team: ai
+        annotations:
+          summary: "High LLM cost > $10/hour"
+          description: "Cost is ${{ $value }}/hour"
+
+      # ── Retriever ────────────────────────────────────────
+      - alert: RetrieverHighLatency
+        expr: histogram_quantile(0.95, rate(retriever_duration_seconds_bucket[5m])) > 3
+        for: 3m
+        labels:
+          severity: warning
+          team: ai
+        annotations:
+          summary: "Retriever p95 latency > 3s"
+          description: "Retriever p95 latency is {{ $value }}s"
+
+      - alert: RetrieverEmptyResults
+        expr: rate(retriever_empty_total[5m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+          team: ai
+        annotations:
+          summary: "Retriever returning empty results"
+          description: "Empty retrieval rate is {{ $value }}/s"
+
+      - alert: RetrieverFailure
+        expr: rate(retriever_empty_total{strategy="hybrid"}[5m]) > rate(retriever_empty_total{strategy="vector"}[5m])
+        for: 5m
+        labels:
+          severity: warning
+          team: ai
+        annotations:
+          summary: "Retriever hybrid failing"
+          description: "Hybrid retriever returning more empty results than vector"
+
+      # ── Pipeline ─────────────────────────────────────────
+      - alert: PipelineHighFailureRate
+        expr: rate(pipeline_failed_total[5m]) / (rate(pipeline_processed_total[5m]) + rate(pipeline_failed_total[5m]) + 1) > 0.1
+        for: 5m
+        labels:
+          severity: critical
+          team: data
+        annotations:
+          summary: "Pipeline failure rate > 10%"
+          description: "Pipeline failure rate is {{ $value | humanizePercentage }}"
+
+      - alert: PipelineStalled
+        expr: time() - pipeline_last_success_timestamp_seconds > 86400
+        for: 10m
+        labels:
+          severity: warning
+          team: data
+        annotations:
+          summary: "Pipeline stalled for > 24h"
+          description: "Last successful run was {{ $value | humanizeDuration }} ago"
+
+      - alert: PipelineSlowProcessing
+        expr: histogram_quantile(0.95, rate(pipeline_duration_seconds_bucket[5m])) > 300
+        for: 5m
+        labels:
+          severity: warning
+          team: data
+        annotations:
+          summary: "Pipeline processing too slow"
+          description: "p95 processing time is {{ $value }}s"
+
+      # ── Knowledge Graph ──────────────────────────────────
+      - alert: KnowledgeGraphNoGrowth
+        expr: increase(gold_nodes_total[7d]) == 0
+        for: 24h
+        labels:
+          severity: warning
+          team: data
+        annotations:
+          summary: "Knowledge graph not growing"
+          description: "No new nodes in 7 days"
+
+      # ── Security ─────────────────────────────────────────
+      - alert: FailedLoginAttempts
+        expr: rate(http_requests_total{endpoint="/auth/login",status=~"4.."}[5m]) > 10
+        for: 1m
+        labels:
+          severity: critical
+          team: security
+        annotations:
+          summary: "High failed login rate"
+          description: "{{ $value }} failed logins/s"
+
+      - alert: UnauthorizedAccess
+        expr: rate(http_requests_total{status="403"}[5m]) > 5
+        for: 2m
+        labels:
+          severity: warning
+          team: security
+        annotations:
+          summary: "High 403 rate"
+          description: "{{ $value }} 403/s"
+
+      - alert: RateLimitHit
+        expr: rate(http_requests_total{status="429"}[5m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+          team: security
+        annotations:
+          summary: "Rate limit triggered"
+          description: "{{ $value }} requests rate-limited/s"

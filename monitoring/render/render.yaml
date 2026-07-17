@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: ai-platform-prometheus-agent
+    env: python
+    region: singapore
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn prom_agent:app --bind 0.0.0.0:$PORT --workers 1 --threads 2 --timeout 30
+    envVars:
+      - key: APP_URL
+        value: https://ai-platform.onrender.com
+      - key: SCRAPE_INTERVAL
+        value: "15"
+      - key: SCRAPE_TIMEOUT
+        value: "10"
+      - key: PYTHON_VERSION
+        value: "3.11.0"

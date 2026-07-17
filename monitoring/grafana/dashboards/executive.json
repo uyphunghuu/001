@@ -1,0 +1,100 @@
+{
+  "title": "Executive Dashboard",
+  "version": 1,
+  "timezone": "utc",
+  "editable": true,
+  "refresh": "30s",
+  "tags": ["executive", "ai-platform"],
+  "panels": [
+    {
+      "title": "System Health",
+      "type": "row",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0}
+    },
+    {
+      "title": "Uptime",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 4, "x": 0, "y": 1},
+      "targets": [{"expr": "time() - process_start_time_seconds{job='fastapi_app'}", "legendFormat": "Uptime"}],
+      "fieldConfig": {"defaults": {"unit": "s", "color": {"mode": "green"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}}}
+    },
+    {
+      "title": "Total Requests (24h)",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 4, "x": 4, "y": 1},
+      "targets": [{"expr": "increase(http_requests_total[24h])", "legendFormat": "Requests"}],
+      "fieldConfig": {"defaults": {"unit": "short", "color": {"mode": "blue"}}}
+    },
+    {
+      "title": "Error Rate",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 4, "x": 8, "y": 1},
+      "targets": [{"expr": "rate(http_requests_total{status=~'5..'}[5m]) / rate(http_requests_total[5m]) * 100", "legendFormat": "Errors"}],
+      "fieldConfig": {"defaults": {"unit": "percent", "color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 5}]}}}
+    },
+    {
+      "title": "Active Users",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 4, "x": 12, "y": 1},
+      "targets": [{"expr": "count(rate(http_requests_total[5m]) > 0)", "legendFormat": "Users"}],
+      "fieldConfig": {"defaults": {"unit": "short", "color": {"mode": "blue"}}}
+    },
+    {
+      "title": "P99 Latency",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 4, "x": 16, "y": 1},
+      "targets": [{"expr": "histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[5m]))", "legendFormat": "p99"}],
+      "fieldConfig": {"defaults": {"unit": "s", "color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 1}, {"color": "red", "value": 5}]}}}
+    },
+    {
+      "title": "Pipeline Health",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 4, "x": 20, "y": 1},
+      "targets": [{"expr": "time() - pipeline_last_success_timestamp_seconds", "legendFormat": "Last run"}],
+      "fieldConfig": {"defaults": {"unit": "s", "color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 3600}, {"color": "red", "value": 86400}]}}}
+    },
+    {
+      "title": "Request Rate",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 5},
+      "targets": [
+        {"expr": "rate(http_requests_total[5m])", "legendFormat": "Total"},
+        {"expr": "rate(http_requests_total{status=~'5..'}[5m])", "legendFormat": "Errors"}
+      ]
+    },
+    {
+      "title": "Latency (p50/p95/p99)",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 5},
+      "targets": [
+        {"expr": "histogram_quantile(0.50, rate(http_request_duration_seconds_bucket[5m]))", "legendFormat": "p50"},
+        {"expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))", "legendFormat": "p95"},
+        {"expr": "histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[5m]))", "legendFormat": "p99"}
+      ]
+    },
+    {
+      "title": "Knowledge Growth",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 13},
+      "targets": [
+        {"expr": "increase(gold_nodes_total[24h])", "legendFormat": "New nodes"},
+        {"expr": "increase(gold_edges_total[24h])", "legendFormat": "New edges"}
+      ]
+    },
+    {
+      "title": "Cost Overview",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 13},
+      "targets": [
+        {"expr": "rate(llm_cost_usd_total[1h])", "legendFormat": "LLM $/h"}
+      ]
+    },
+    {
+      "title": "Components Status",
+      "type": "table",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 21},
+      "targets": [{"expr": "up", "legendFormat": "", "format": "table"}],
+      "transformations": [{"id": "organize", "options": {"excludeByName": {}, "indexByName": {}, "renameByName": {"__name__": "Metric", "instance": "Instance", "job": "Service", "up": "Status"}}}]
+    }
+  ]
+}

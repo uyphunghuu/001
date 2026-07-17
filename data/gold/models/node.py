@@ -10,9 +10,12 @@ from data.gold.models.base import Base, TimestampMixin
 
 
 try:
-    from sqlalchemy.dialects.postgresql import VECTOR
+    from pgvector.sqlalchemy import Vector as VECTOR
 except ImportError:
-    VECTOR = Text
+    try:
+        from sqlalchemy.dialects.postgresql import VECTOR
+    except ImportError:
+        VECTOR = None
 
 
 class Node(Base, TimestampMixin):
@@ -37,6 +40,8 @@ class Node(Base, TimestampMixin):
 
     embedding_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     embedding_updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
-    embedding_vector: Mapped[Optional[object]] = mapped_column(VECTOR(384), nullable=True)
+    embedding_vector: Mapped[Optional[object]] = mapped_column(
+        VECTOR(384) if VECTOR is not None else Text, nullable=True
+    )
 
     metadata_: Mapped[Optional[dict]] = mapped_column("metadata", JSONB, default=dict)

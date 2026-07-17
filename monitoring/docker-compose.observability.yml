@@ -1,0 +1,163 @@
+version: "3.8"
+
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: ai_platform_prometheus
+    volumes:
+      - ./prometheus:/etc/prometheus
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=30d"
+      - "--web.enable-remote-write-receiver"
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+    networks:
+      - ai_platform_observability
+
+  pushgateway:
+    image: prom/pushgateway:latest
+    container_name: ai_platform_pushgateway
+    ports:
+      - "9091:9091"
+    restart: unless-stopped
+    networks:
+      - ai_platform_observability
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: ai_platform_grafana
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/etc/grafana/provisioning/dashboards/executive.json
+      - GF_FEATURE_TOGGLES_ENABLE=traceqlSearch
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    networks:
+      - ai_platform_observability
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
+
+  loki:
+    image: grafana/loki:latest
+    container_name: ai_platform_loki
+    volumes:
+      - ./loki/loki-config.yml:/etc/loki/loki-config.yml
+      - loki_data:/loki
+    command:
+      - "--config.file=/etc/loki/loki-config.yml"
+    ports:
+      - "3100:3100"
+    restart: unless-stopped
+    networks:
+      - ai_platform_observability
+
+  promtail:
+    image: grafana/promtail:latest
+    container_name: ai_platform_promtail
+    volumes:
+      - ./promtail/promtail-config.yml:/etc/promtail/promtail-config.yml
+      - ../logs:/var/log/ai-platform
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    command:
+      - "--config.file=/etc/promtail/promtail-config.yml"
+    restart: unless-stopped
+    networks:
+      - ai_platform_observability
+    depends_on:
+      - loki
+
+  tempo:
+    image: grafana/tempo:latest
+    container_name: ai_platform_tempo
+    volumes:
+      - ./tempo/tempo-config.yml:/etc/tempo/tempo-config.yml
+      - tempo_data:/var/tempo
+    command:
+      - "--config.file=/etc/tempo/tempo-config.yml"
+    ports:
+      - "3200:3200"
+    restart: unless-stopped
+    networks:
+      - ai_platform_observability
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: ai_platform_otel_collector
+    volumes:
+      - ./otel/otel-collector-config.yml:/etc/otel/config.yml
+    command:
+      - "--config=/etc/otel/config.yml"
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+      - "8889:8889"
+      - "13133:13133"
+    restart: unless-stopped
+    networks:
+      - ai_platform_observability
+    depends_on:
+      - tempo
+      - loki
+
+  postgres_exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: ai_platform_pg_exporter
+    environment:
+      - DATA_SOURCE_NAME=postgresql://platform:platform123@host.docker.internal:5433/ai_platform?sslmode=disable
+    ports:
+      - "9187:9187"
+    restart: unless-stopped
+    networks:
+      - ai_platform_observability
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  node_exporter:
+    image: prom/node-exporter:latest
+    container_name: ai_platform_node_exporter
+    ports:
+      - "9100:9100"
+    restart: unless-stopped
+    networks:
+      - ai_platform_observability
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: ai_platform_cadvisor
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    devices:
+      - /dev/kmsg:/dev/kmsg
+    privileged: true
+    ports:
+      - "8088:8080"
+    restart: unless-stopped
+    networks:
+      - ai_platform_observability
+
+volumes:
+  prometheus_data:
+  grafana_data:
+  loki_data:
+  tempo_data:
+
+networks:
+  ai_platform_observability:
+    driver: bridge

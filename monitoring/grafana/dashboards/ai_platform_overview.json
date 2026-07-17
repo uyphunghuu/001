@@ -1,0 +1,286 @@
+{
+  "__inputs": [],
+  "__requires": [],
+  "title": "AI Platform — Overview",
+  "version": 1,
+  "timezone": "utc",
+  "editable": true,
+  "refresh": "10s",
+  "panels": [
+    {
+      "title": "System",
+      "type": "row",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0}
+    },
+    {
+      "title": "CPU Usage",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 6, "x": 0, "y": 1},
+      "targets": [
+        {"expr": "100 - (avg by(instance) (rate(node_cpu_seconds_total{mode='idle'}[5m])) * 100)", "legendFormat": "CPU %"}
+      ]
+    },
+    {
+      "title": "Memory Usage",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 6, "x": 6, "y": 1},
+      "targets": [
+        {"expr": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100", "legendFormat": "Memory %"}
+      ]
+    },
+    {
+      "title": "Disk Usage",
+      "type": "gauge",
+      "gridPos": {"h": 8, "w": 6, "x": 12, "y": 1},
+      "targets": [
+        {"expr": "100 - ((node_filesystem_avail_bytes{mountpoint='/'} / node_filesystem_size_bytes{mountpoint='/'}) * 100)", "legendFormat": "Disk %"}
+      ]
+    },
+    {
+      "title": "Docker Containers",
+      "type": "stat",
+      "gridPos": {"h": 8, "w": 6, "x": 18, "y": 1},
+      "targets": [
+        {"expr": "count(up)", "legendFormat": "Up"},
+        {"expr": "count(up == 0)", "legendFormat": "Down"}
+      ]
+    },
+    {
+      "title": "API",
+      "type": "row",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 9}
+    },
+    {
+      "title": "Requests per Second",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 10},
+      "targets": [
+        {"expr": "rate(http_requests_total[5m])", "legendFormat": "Total"},
+        {"expr": "rate(http_requests_total{method='POST'}[5m])", "legendFormat": "POST"},
+        {"expr": "rate(http_requests_total{method='GET'}[5m])", "legendFormat": "GET"}
+      ]
+    },
+    {
+      "title": "Response Time (p50 / p95 / p99)",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 10},
+      "targets": [
+        {"expr": "histogram_quantile(0.50, rate(http_request_duration_seconds_bucket[5m]))", "legendFormat": "p50"},
+        {"expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))", "legendFormat": "p95"},
+        {"expr": "histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[5m]))", "legendFormat": "p99"}
+      ]
+    },
+    {
+      "title": "HTTP Status Codes",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 10},
+      "targets": [
+        {"expr": "rate(http_requests_total{status=~'2..'}[5m])", "legendFormat": "2xx"},
+        {"expr": "rate(http_requests_total{status=~'4..'}[5m])", "legendFormat": "4xx"},
+        {"expr": "rate(http_requests_total{status=~'5..'}[5m])", "legendFormat": "5xx"}
+      ]
+    },
+    {
+      "title": "Error Rate",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 18},
+      "targets": [
+        {"expr": "rate(http_requests_total{status=~'5..'}[5m]) / rate(http_requests_total[5m])", "legendFormat": "Error %"}
+      ]
+    },
+    {
+      "title": "Request Duration by Endpoint",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 18},
+      "targets": [
+        {"expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{endpoint='/chat'}[5m]))", "legendFormat": "/chat"},
+        {"expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{endpoint='/health'}[5m]))", "legendFormat": "/health"}
+      ]
+    },
+    {
+      "title": "Active Requests",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 18},
+      "targets": [
+        {"expr": "http_requests_active", "legendFormat": "Active"}
+      ]
+    },
+    {
+      "title": "Database",
+      "type": "row",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 26}
+    },
+    {
+      "title": "Active Connections",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 27},
+      "targets": [
+        {"expr": "pg_stat_activity_count", "legendFormat": "Connections"},
+        {"expr": "pg_stat_activity_max_connections", "legendFormat": "Max"}
+      ]
+    },
+    {
+      "title": "Query Latency (p95)",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 27},
+      "targets": [
+        {"expr": "histogram_quantile(0.95, rate(pg_stat_activity_query_duration_seconds_bucket[5m]))", "legendFormat": "p95"}
+      ]
+    },
+    {
+      "title": "Database Size",
+      "type": "stat",
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 27},
+      "targets": [
+        {"expr": "pg_database_size_bytes{datname='ai_platform'}", "legendFormat": "Size"}
+      ]
+    },
+    {
+      "title": "MinIO",
+      "type": "row",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 35}
+    },
+    {
+      "title": "Object Count",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 36},
+      "targets": [
+        {"expr": "minio_bucket_objects_total{bucket='gmail-raw'}", "legendFormat": "Objects"}
+      ]
+    },
+    {
+      "title": "Storage Usage",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 36},
+      "targets": [
+        {"expr": "minio_bucket_usage_total_bytes{bucket='gmail-raw'}", "legendFormat": "Bytes"}
+      ]
+    },
+    {
+      "title": "Network IO",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 36},
+      "targets": [
+        {"expr": "rate(minio_s3_requests_total[5m])", "legendFormat": "Requests/s"}
+      ]
+    },
+    {
+      "title": "AI / LLM",
+      "type": "row",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 44}
+    },
+    {
+      "title": "LLM Requests",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 45},
+      "targets": [
+        {"expr": "rate(llm_requests_total[5m])", "legendFormat": "Total"},
+        {"expr": "rate(llm_requests_total{status='error'}[5m])", "legendFormat": "Errors"}
+      ]
+    },
+    {
+      "title": "LLM Response Time (p95)",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 45},
+      "targets": [
+        {"expr": "histogram_quantile(0.95, rate(llm_request_duration_seconds_bucket[5m]))", "legendFormat": "p95"}
+      ]
+    },
+    {
+      "title": "Token Usage",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 45},
+      "targets": [
+        {"expr": "rate(llm_tokens_total[5m])", "legendFormat": "Total"},
+        {"expr": "rate(llm_tokens_total{type='input'}[5m])", "legendFormat": "Input"},
+        {"expr": "rate(llm_tokens_total{type='output'}[5m])", "legendFormat": "Output"}
+      ]
+    },
+    {
+      "title": "LLM Cost ($/hour)",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 53},
+      "targets": [
+        {"expr": "rate(llm_cost_usd_total[1h])", "legendFormat": "$/hour"}
+      ]
+    },
+    {
+      "title": "Retriever",
+      "type": "row",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 61}
+    },
+    {
+      "title": "Retrieval Latency (p95)",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 62},
+      "targets": [
+        {"expr": "histogram_quantile(0.95, rate(retriever_duration_seconds_bucket[5m]))", "legendFormat": "p95"},
+        {"expr": "histogram_quantile(0.50, rate(retriever_duration_seconds_bucket[5m]))", "legendFormat": "p50"}
+      ]
+    },
+    {
+      "title": "Documents Retrieved",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 62},
+      "targets": [
+        {"expr": "rate(retriever_documents_total[5m])", "legendFormat": "Docs/s"}
+      ]
+    },
+    {
+      "title": "Empty Retrievals",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 62},
+      "targets": [
+        {"expr": "rate(retriever_empty_total[5m])", "legendFormat": "Empty/s"}
+      ]
+    },
+    {
+      "title": "Pipeline",
+      "type": "row",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 70}
+    },
+    {
+      "title": "Documents Processed",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 71},
+      "targets": [
+        {"expr": "rate(pipeline_processed_total[5m])", "legendFormat": "Success"},
+        {"expr": "rate(pipeline_failed_total[5m])", "legendFormat": "Failed"}
+      ]
+    },
+    {
+      "title": "Processing Time (p95)",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 71},
+      "targets": [
+        {"expr": "histogram_quantile(0.95, rate(pipeline_duration_seconds_bucket[5m]))", "legendFormat": "p95"}
+      ]
+    },
+    {
+      "title": "Success Rate",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 71},
+      "targets": [
+        {"expr": "rate(pipeline_processed_total[5m]) / (rate(pipeline_processed_total[5m]) + rate(pipeline_failed_total[5m]))", "legendFormat": "Success %"}
+      ]
+    },
+    {
+      "title": "Last Pipeline Run",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 8, "x": 0, "y": 79},
+      "targets": [
+        {"expr": "time() - pipeline_last_success_timestamp_seconds", "legendFormat": "Seconds ago"}
+      ]
+    },
+    {
+      "title": "Pipeline by Layer",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 16, "x": 8, "y": 79},
+      "targets": [
+        {"expr": "rate(pipeline_processed_total{layer='bronze'}[5m])", "legendFormat": "Bronze"},
+        {"expr": "rate(pipeline_processed_total{layer='silver'}[5m])", "legendFormat": "Silver"},
+        {"expr": "rate(pipeline_processed_total{layer='gold'}[5m])", "legendFormat": "Gold"}
+      ]
+    }
+  ]
+}

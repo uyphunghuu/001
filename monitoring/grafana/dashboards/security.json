@@ -1,0 +1,136 @@
+{
+  "title": "Security Dashboard",
+  "version": 1,
+  "timezone": "utc",
+  "editable": true,
+  "refresh": "15s",
+  "tags": ["security", "ai-platform"],
+  "panels": [
+    {
+      "title": "Security Overview",
+      "type": "row",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0}
+    },
+    {
+      "title": "Failed Logins (24h)",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 4, "x": 0, "y": 1},
+      "targets": [{"expr": "increase(http_requests_total{endpoint='/auth/login',status='401'}[24h])", "legendFormat": "Failed"}],
+      "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 10}, {"color": "red", "value": 100}]}}}
+    },
+    {
+      "title": "Unauthorized (403)",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 4, "x": 4, "y": 1},
+      "targets": [{"expr": "increase(http_requests_total{status='403'}[24h])", "legendFormat": "403"}],
+      "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 5}, {"color": "red", "value": 20}]}}}
+    },
+    {
+      "title": "Rate Limited (429)",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 4, "x": 8, "y": 1},
+      "targets": [{"expr": "increase(http_requests_total{status='429'}[24h])", "legendFormat": "429"}],
+      "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 10}, {"color": "red", "value": 50}]}}}
+    },
+    {
+      "title": "Active Sessions",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 4, "x": 12, "y": 1},
+      "targets": [{"expr": "active_sessions_total", "legendFormat": "Sessions"}]
+    },
+    {
+      "title": "Expired JWTs (24h)",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 4, "x": 16, "y": 1},
+      "targets": [{"expr": "increase(jwt_expired_total[24h])", "legendFormat": "Expired"}]
+    },
+    {
+      "title": "Prompt Injections (24h)",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 4, "x": 20, "y": 1},
+      "targets": [{"expr": "increase(prompt_injection_attempts_total[24h])", "legendFormat": "Attempts"}],
+      "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}]}}}
+    },
+    {
+      "title": "Security Events",
+      "type": "row",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 5}
+    },
+    {
+      "title": "Auth Events Over Time",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 6},
+      "targets": [
+        {"expr": "rate(http_requests_total{endpoint='/auth/login'}[5m])", "legendFormat": "Total"},
+        {"expr": "rate(http_requests_total{endpoint='/auth/login',status='401'}[5m])", "legendFormat": "Failed"},
+        {"expr": "rate(http_requests_total{endpoint='/auth/login',status='200'}[5m])", "legendFormat": "Success"}
+      ]
+    },
+    {
+      "title": "403/429 Rate",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 6},
+      "targets": [
+        {"expr": "rate(http_requests_total{status='403'}[5m])", "legendFormat": "403/s"},
+        {"expr": "rate(http_requests_total{status='429'}[5m])", "legendFormat": "429/s"}
+      ]
+    },
+    {
+      "title": "Permission Denied by Endpoint",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 6},
+      "targets": [
+        {"expr": "rate(http_requests_total{status='403'}[5m])", "legendFormat": "{{endpoint}}"}
+      ]
+    },
+    {
+      "title": "Threat Analysis",
+      "type": "row",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 14}
+    },
+    {
+      "title": "Prompt Injection Attempts",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 15},
+      "targets": [
+        {"expr": "rate(prompt_injection_attempts_total[5m])", "legendFormat": "Attempts/s"}
+      ]
+    },
+    {
+      "title": "Suspicious IPs",
+      "type": "table",
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 15},
+      "targets": [{"expr": "topk(10, sum by(client_ip) (rate(http_requests_total{status='401'}[5m])))", "legendFormat": "", "format": "table"}],
+      "transformations": [{"id": "organize", "options": {"renameByName": {"client_ip": "IP", "Value": "Attempt Rate"}}}]
+    },
+    {
+      "title": "Secret Access Events",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 15},
+      "targets": [
+        {"expr": "rate(secret_access_total[5m])", "legendFormat": "Access/s"}
+      ]
+    },
+    {
+      "title": "Rate Limit Analysis",
+      "type": "row",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 23}
+    },
+    {
+      "title": "Rate Limit by Endpoint",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24},
+      "targets": [
+        {"expr": "rate(http_requests_total{status='429'}[5m])", "legendFormat": "{{endpoint}}"}
+      ]
+    },
+    {
+      "title": "Failed Login Rate",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24},
+      "targets": [
+        {"expr": "rate(http_requests_total{endpoint='/auth/login',status='401'}[5m]) / rate(http_requests_total{endpoint='/auth/login'}[5m]) * 100", "legendFormat": "Failure %"}
+      ]
+    }
+  ]
+}

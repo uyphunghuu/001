@@ -1,0 +1,51 @@
+version: "3.8"
+
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: ai_platform_prometheus
+    volumes:
+      - ./prometheus:/etc/prometheus
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=7d"
+      - "--web.enable-remote-write-receiver"
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+    networks:
+      - ai_platform_monitoring
+    env_file:
+      - .env.grafana-cloud
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: ai_platform_otel_collector
+    volumes:
+      - ./otel:/etc/otel
+    command:
+      - "--config=/etc/otel/otel-collector-config.yml"
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+    restart: unless-stopped
+    networks:
+      - ai_platform_monitoring
+
+  pushgateway:
+    image: prom/pushgateway:latest
+    container_name: ai_platform_pushgateway
+    ports:
+      - "9091:9091"
+    restart: unless-stopped
+    networks:
+      - ai_platform_monitoring
+
+volumes:
+  prometheus_data:
+
+networks:
+  ai_platform_monitoring:
+    driver: bridge

@@ -43,9 +43,11 @@ class Settings:
         default_factory=lambda: os.getenv("LLM_MODEL", "llama-3.3-70b-versatile")
     )
 
+    pg_sslmode: str = field(default_factory=lambda: os.getenv("PG_SSLMODE", "disable"))
+
     @property
     def database_url(self) -> str:
-        return f"postgresql://{self.pg_user}:{self.pg_password}@{self.pg_host}:{self.pg_port}/{self.pg_db}?sslmode=require"
+        return f"postgresql://{self.pg_user}:{self.pg_password}@{self.pg_host}:{self.pg_port}/{self.pg_db}?sslmode={self.pg_sslmode}"
 
 
 settings = Settings()

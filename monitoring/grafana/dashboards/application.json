@@ -1,0 +1,119 @@
+{
+  "title": "Application Dashboard",
+  "version": 1,
+  "timezone": "utc",
+  "editable": true,
+  "refresh": "10s",
+  "tags": ["application", "api", "ai-platform"],
+  "panels": [
+    {
+      "title": "Request Overview",
+      "type": "row",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0}
+    },
+    {
+      "title": "Requests per Second",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 1},
+      "targets": [
+        {"expr": "rate(http_requests_total[5m])", "legendFormat": "Total"},
+        {"expr": "rate(http_requests_total{method='POST'}[5m])", "legendFormat": "POST"},
+        {"expr": "rate(http_requests_total{method='GET'}[5m])", "legendFormat": "GET"}
+      ]
+    },
+    {
+      "title": "Response Time (p50/p95/p99)",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 1},
+      "targets": [
+        {"expr": "histogram_quantile(0.50, rate(http_request_duration_seconds_bucket[5m]))", "legendFormat": "p50"},
+        {"expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))", "legendFormat": "p95"},
+        {"expr": "histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[5m]))", "legendFormat": "p99"}
+      ]
+    },
+    {
+      "title": "HTTP Status Codes",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 1},
+      "targets": [
+        {"expr": "rate(http_requests_total{status=~'2..'}[5m])", "legendFormat": "2xx"},
+        {"expr": "rate(http_requests_total{status=~'4..'}[5m])", "legendFormat": "4xx"},
+        {"expr": "rate(http_requests_total{status=~'5..'}[5m])", "legendFormat": "5xx"}
+      ]
+    },
+    {
+      "title": "Error Analysis",
+      "type": "row",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 9}
+    },
+    {
+      "title": "Error Rate by Endpoint",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 10},
+      "targets": [
+        {"expr": "rate(http_requests_total{status=~'5..'}[5m]) / rate(http_requests_total[5m]) * 100", "legendFormat": "Global"},
+        {"expr": "rate(http_requests_total{endpoint='/chat',status=~'5..'}[5m]) / rate(http_requests_total{endpoint='/chat'}[5m]) * 100", "legendFormat": "/chat"}
+      ]
+    },
+    {
+      "title": "Concurrent Requests",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 10},
+      "targets": [
+        {"expr": "http_requests_active", "legendFormat": "Active"}
+      ]
+    },
+    {
+      "title": "Latency Heatmap",
+      "type": "heatmap",
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 10},
+      "targets": [
+        {"expr": "rate(http_request_duration_seconds_bucket[5m])", "legendFormat": "{{le}}"}
+      ]
+    },
+    {
+      "title": "Endpoint Performance",
+      "type": "row",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 18}
+    },
+    {
+      "title": "Request Duration by Endpoint",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 19},
+      "targets": [
+        {"expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{endpoint='/chat'}[5m]))", "legendFormat": "/chat p95"},
+        {"expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{endpoint='/health'}[5m]))", "legendFormat": "/health p95"},
+        {"expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{endpoint='/metrics'}[5m]))", "legendFormat": "/metrics p95"}
+      ]
+    },
+    {
+      "title": "Endpoint Request Rate",
+      "type": "table",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 19},
+      "targets": [{"expr": "rate(http_requests_total[5m])", "legendFormat": "", "format": "table"}],
+      "transformations": [{"id": "organize", "options": {"excludeByName": {}, "indexByName": {}, "renameByName": {"endpoint": "Endpoint", "method": "Method", "status": "Status", "Value": "Rate"}}}]
+    },
+    {
+      "title": "Background Tasks & Dependencies",
+      "type": "row",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 27}
+    },
+    {
+      "title": "Dependency Latency (DB)",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 28},
+      "targets": [
+        {"expr": "rate(pg_stat_activity_query_duration_seconds_sum[5m]) / rate(pg_stat_activity_query_duration_seconds_count[5m])", "legendFormat": "Avg query"}
+      ]
+    },
+    {
+      "title": "Exception Count",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 28},
+      "targets": [
+        {"expr": "rate(http_requests_total{status=~'5..'}[5m])", "legendFormat": "5xx"},
+        {"expr": "rate(llm_requests_total{status='error'}[5m])", "legendFormat": "LLM errors"}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,130 @@
+{
+  "title": "Infrastructure Dashboard",
+  "version": 1,
+  "timezone": "utc",
+  "editable": true,
+  "refresh": "15s",
+  "tags": ["infrastructure", "ai-platform"],
+  "panels": [
+    {
+      "title": "CPU & Memory",
+      "type": "row",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0}
+    },
+    {
+      "title": "CPU Usage",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 1},
+      "targets": [
+        {"expr": "100 - (avg by(instance) (rate(node_cpu_seconds_total{mode='idle'}[5m])) * 100)", "legendFormat": "CPU %"},
+        {"expr": "avg by(instance) (rate(node_cpu_seconds_total{mode='user'}[5m]) * 100)", "legendFormat": "User"},
+        {"expr": "avg by(instance) (rate(node_cpu_seconds_total{mode='system'}[5m]) * 100)", "legendFormat": "System"},
+        {"expr": "avg by(instance) (rate(node_cpu_seconds_total{mode='iowait'}[5m]) * 100)", "legendFormat": "IOWait"}
+      ]
+    },
+    {
+      "title": "Memory Usage",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 1},
+      "targets": [
+        {"expr": "node_memory_MemTotal_bytes", "legendFormat": "Total"},
+        {"expr": "node_memory_MemUsed_bytes", "legendFormat": "Used"},
+        {"expr": "node_memory_MemAvailable_bytes", "legendFormat": "Available"}
+      ]
+    },
+    {
+      "title": "Load Average",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 1},
+      "targets": [
+        {"expr": "node_load1", "legendFormat": "1m"},
+        {"expr": "node_load5", "legendFormat": "5m"},
+        {"expr": "node_load15", "legendFormat": "15m"}
+      ]
+    },
+    {
+      "title": "Disk & Network",
+      "type": "row",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 9}
+    },
+    {
+      "title": "Disk Usage",
+      "type": "gauge",
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 10},
+      "targets": [
+        {"expr": "100 - ((node_filesystem_avail_bytes{mountpoint='/'} / node_filesystem_size_bytes{mountpoint='/'}) * 100)", "legendFormat": "Disk %"}
+      ]
+    },
+    {
+      "title": "Disk IO",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 10},
+      "targets": [
+        {"expr": "rate(node_disk_read_bytes_total[5m])", "legendFormat": "Read"},
+        {"expr": "rate(node_disk_written_bytes_total[5m])", "legendFormat": "Write"}
+      ]
+    },
+    {
+      "title": "Network Bandwidth",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 10},
+      "targets": [
+        {"expr": "rate(node_network_receive_bytes_total[5m])", "legendFormat": "In"},
+        {"expr": "rate(node_network_transmit_bytes_total[5m])", "legendFormat": "Out"}
+      ]
+    },
+    {
+      "title": "Containers",
+      "type": "row",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 18}
+    },
+    {
+      "title": "Container CPU",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 19},
+      "targets": [
+        {"expr": "rate(container_cpu_usage_seconds_total{name!=''}[1m]) * 100", "legendFormat": "{{.name}}"}
+      ]
+    },
+    {
+      "title": "Container Memory",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 19},
+      "targets": [
+        {"expr": "container_memory_usage_bytes{name!=''}", "legendFormat": "{{.name}}"}
+      ]
+    },
+    {
+      "title": "Container Network IO",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 19},
+      "targets": [
+        {"expr": "rate(container_network_receive_bytes_total[5m])", "legendFormat": "{{.name}} In"},
+        {"expr": "rate(container_network_transmit_bytes_total[5m])", "legendFormat": "{{.name}} Out"}
+      ]
+    },
+    {
+      "title": "Swap & Filesystem",
+      "type": "row",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 27}
+    },
+    {
+      "title": "Swap Usage",
+      "type": "graph",
+      "gridPos": {"h": 6, "w": 8, "x": 0, "y": 28},
+      "targets": [
+        {"expr": "node_memory_SwapTotal_bytes - node_memory_SwapFree_bytes", "legendFormat": "Used"},
+        {"expr": "node_memory_SwapTotal_bytes", "legendFormat": "Total"}
+      ]
+    },
+    {
+      "title": "Filesystem Usage",
+      "type": "graph",
+      "gridPos": {"h": 6, "w": 8, "x": 8, "y": 28},
+      "targets": [
+        {"expr": "node_filesystem_size_bytes{mountpoint!=''}", "legendFormat": "{{.mountpoint}} Total"},
+        {"expr": "node_filesystem_avail_bytes{mountpoint!=''}", "legendFormat": "{{.mountpoint}} Free"}
+      ]
+    }
+  ]
+}
