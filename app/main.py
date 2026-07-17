@@ -56,8 +56,14 @@ def index_html():
 
 @app.on_event("startup")
 def on_startup():
-    init_database()
-    setup_opentelemetry(app)
+    try:
+        init_database()
+    except Exception as e:
+        print(f"[startup] Database init failed (non-fatal): {e}")
+    try:
+        setup_opentelemetry(app)
+    except Exception as e:
+        print(f"[startup] OpenTelemetry setup failed (non-fatal): {e}")
 
 
 @app.get("/metrics")

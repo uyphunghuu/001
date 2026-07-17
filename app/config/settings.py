@@ -43,7 +43,7 @@ class Settings:
         default_factory=lambda: os.getenv("LLM_MODEL", "llama-3.3-70b-versatile")
     )
 
-    pg_sslmode: str = field(default_factory=lambda: os.getenv("PG_SSLMODE", "disable"))
+    pg_sslmode: str = field(default_factory=lambda: os.getenv("PG_SSLMODE", "require"))
 
     @property
     def database_url(self) -> str:
