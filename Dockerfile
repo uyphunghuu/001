@@ -40,6 +40,7 @@ RUN groupadd --gid 1001 appuser && \
 
 # Copy source code
 COPY app/ ./app/
+COPY monitoring/ ./monitoring/
 
 # Ownership
 RUN chown -R appuser:appuser /app
